@@ -9,6 +9,9 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
 
+    permissions:  # Dodajte ovo
+      contents: write  # Omogućava pisanje u repozitorijum
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
