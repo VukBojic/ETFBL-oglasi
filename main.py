@@ -11,6 +11,10 @@ from email.mime.multipart import MIMEMultipart
 import os
 import re
 
+# Definišite apsolutnu putanju do sent_ads.txt
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Direktorijum u kome se nalazi skripta
+SENT_ADS_PATH = os.path.join(BASE_DIR, "sent_ads.txt")  # Apsolutna putanja do sent_ads.txt
+
 # Konfiguracija
 URL = "https://efee.etf.unibl.org/oglasi/"
 PREDMETI = [
@@ -171,10 +175,24 @@ def sacuvaj_poslate_oglasa(poslednji_oglasi):
         f.write("\n".join(poslednji_oglasi))
 
 # Glavna funkcija
+# Funkcija za učitavanje poslatih oglasa iz fajla
+def ucitaj_poslate_oglasa():
+    if not os.path.exists(SENT_ADS_PATH):
+        return set()  # Ako fajl ne postoji, vraćamo prazan skup
+
+    with open(SENT_ADS_PATH, "r", encoding="utf-8") as f:
+        return {normalizuj_oglas(oglas) for oglas in f.read().splitlines()}
+
+# Funkcija za čuvanje poslatih oglasa u fajl
+def sacuvaj_poslate_oglasa(poslednji_oglasi):
+    with open(SENT_ADS_PATH, "w", encoding="utf-8") as f:
+        f.write("\n".join(poslednji_oglasi))
+
+# Glavna funkcija
 def main():
     # Provera da li sent_ads.txt postoji, ako ne, kreiraj ga
-    if not os.path.exists("sent_ads.txt"):
-        with open("sent_ads.txt", "w", encoding="utf-8") as f:
+    if not os.path.exists(SENT_ADS_PATH):
+        with open(SENT_ADS_PATH, "w", encoding="utf-8") as f:
             f.write("")
 
     poslednji_oglasi = ucitaj_poslate_oglasa()  # Učitamo poslednje oglase iz fajla
