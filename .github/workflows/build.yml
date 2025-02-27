@@ -1,26 +1,27 @@
-name: Run Python Script
+name: Run Script Every 5 Minutes
+
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Svakih 5 minuta
+    - cron: '*/5 * * * *'  # Pokreće se svakih 5 minuta
+  workflow_dispatch:  # Omogućava ručno pokretanje
+
 jobs:
   run-script:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2  # Ovo preuzima ceo repozitorijum, uključujući sent_ads.txt
+      - name: Checkout code
+        uses: actions/checkout@v2
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.x'
+          python-version: '3.9'  # Ili verzija Pythona koju koristite
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install selenium webdriver_manager beautifulsoup4
+
       - name: Run script
-        run: python main.py
-      - name: Commit changes to sent_ads.txt
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add sent_ads.txt
-          git commit -m "Automatski ažuriran sent_ads.txt"
-          git push
+        run: python main.py  # Zamijenite "main.py" sa imenom vašeg Python fajla
