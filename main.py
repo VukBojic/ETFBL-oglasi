@@ -22,16 +22,16 @@ PREDMETI = [
     "Математика 4",
     "Основи комуникација и теорија информација",
     "Програмски језици 2",
-    "Основи оперативних система",
     "Основи електротехнике 1",  # Dodajemo predmete sa prve godine
-    "Основи електротехнике 2"
+    "Основи електротехнике 2",
+    "Strukture podataka i algoritmi"
 ]
-EMAIL = "vuk.bojic2023@gmail.com"
+EMAIL = "vuk.bojic2025@gmail.com"
 
 # Funkcija za slanje emaila
 def posalji_email(subject, body, to_email):
-    from_email = "vuk.bojic2023@gmail.com"  # Unesite vaš email
-    from_password = "ftlf cfge ozcp jagd"  # Unesite vašu email lozinku
+    from_email = "vuk.bojic2025@gmail.com"  # Unesite vaš email
+    from_password = "onyk sxem ivsu hfym"  # Unesite vašu email lozinku
 
     msg = MIMEMultipart()
     msg['From'] = from_email
@@ -229,3 +229,4 @@ def main():
 # Pokretanje glavne funkcije
 if __name__ == "__main__":
     main()
+
