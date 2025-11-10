@@ -160,18 +160,17 @@ def main():
     # FOKUSIRAMO SE SAMO NA PRVU I DRUGU GODINU
     godine_za_slanje = ["prva_godina", "druga_godina"]
     
-    # Prikupi sve oglase iz prve i druge godine
-    svi_oglasi_prva_druga = []
+    # Prikupi sve oglase iz prve i druge godine i normalizuj ih
+    trenutni_oglasi_normalizovani = set()
     for godina in godine_za_slanje:
-        svi_oglasi_prva_druga.extend(oglasi_po_godinama[godina])
-    
-    print(f"📨 Oglasi za slanje (prva i druga godina): {len(svi_oglasi_prva_druga)}")
-    
-    # Normalizuj oglase za poređenje
-    trenutni_oglasi_normalizovani = {normalizuj_oglas(oglas) for oglas in svi_oglasi_prva_druga}
+        for oglas in oglasi_po_godinama[godina]:
+            trenutni_oglasi_normalizovani.add(normalizuj_oglas(oglas))
     
     # Pronađi nove oglase
     novi_oglasi_normalizovani = trenutni_oglasi_normalizovani - poslednji_oglasi
+    
+    # ISPRAVAN ISPIS - brojimo samo nove oglase
+    print(f"📨 Novi oglasi za slanje (prva i druga godina): {len(novi_oglasi_normalizovani)}")
     
     if novi_oglasi_normalizovani:
         print(f"🎉 Pronađeno {len(novi_oglasi_normalizovani)} novih oglasa iz prve i druge godine!")
@@ -182,6 +181,7 @@ def main():
         
         # Brojimo koliko godina ima novih oglasa
         godine_sa_oglasima = []
+        ukupno_poslatih_oglasa = 0
         
         for godina in godine_za_slanje:
             oglasi = oglasi_po_godinama[godina]
@@ -189,6 +189,7 @@ def main():
             
             if novi_oglasi_za_godinu:
                 godine_sa_oglasima.append((godina, novi_oglasi_za_godinu))
+                ukupno_poslatih_oglasa += len(novi_oglasi_za_godinu)
         
         # Ako postoje oglasi, dodajemo podnaslove samo za godine koje imaju oglase
         if godine_sa_oglasima:
@@ -207,13 +208,10 @@ def main():
         # Ažuriraj poslate oglase
         poslednji_oglasi.update(novi_oglasi_normalizovani)
         sacuvaj_poslate_oglasa(poslednji_oglasi)
-        print("💾 Ažurirana lista poslatih oglasa")
+        print(f"💾 Ažurirana lista poslatih oglasa. Poslato {ukupno_poslatih_oglasa} oglasa.")
         
     else:
         print("ℹ️ Nema novih oglasa u prvoj i drugoj godini.")
-
-if __name__ == "__main__":
-    main()
 
 if __name__ == "__main__":
     main()
