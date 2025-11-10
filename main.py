@@ -190,6 +190,7 @@ def sacuvaj_poslate_oglasa(poslednji_oglasi):
 
 # Glavna funkcija
 def main():
+    print("Koristi se fajl:", SENT_ADS_PATH)
     # Provera da li sent_ads.txt postoji, ako ne, kreiraj ga
     if not os.path.exists(SENT_ADS_PATH):
         with open(SENT_ADS_PATH, "w", encoding="utf-8") as f:
@@ -229,4 +230,5 @@ def main():
 # Pokretanje glavne funkcije
 if __name__ == "__main__":
     main()
+
 
