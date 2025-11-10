@@ -12,7 +12,7 @@ import os
 import re
 
 # Definišite apsolutnu putanju do sent_ads.txt
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Direktorijum u kome se nalazi skripta
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Direktorijum gde se nalazi skripta
 SENT_ADS_PATH = os.path.join(BASE_DIR, "sent_ads.txt")  # Apsolutna putanja do sent_ads.txt
 
 # Konfiguracija
@@ -22,7 +22,7 @@ PREDMETI = [
     "Математика 4",
     "Основи комуникација и теорија информација",
     "Програмски језици 2",
-    "Основи електротехнике 1",  # Dodajemo predmete sa prve godine
+    "Основи електротехнике 1",
     "Основи електротехнике 2",
     "Strukture podataka i algoritmi"
 ]
@@ -30,79 +30,58 @@ EMAIL = "vuk.bojic2025@gmail.com"
 
 # Funkcija za slanje emaila
 def posalji_email(subject, body, to_email):
-    from_email = "vuk.bojic2025@gmail.com"  # Unesite vaš email
-    from_password = "onyk sxem ivsu hfym"  # Unesite vašu email lozinku
+    from_email = "vuk.bojic2025@gmail.com"  # vaš email
+    from_password = "onyk sxem ivsu hfym"   # lozinka (app password)
 
     msg = MIMEMultipart()
     msg['From'] = from_email
     msg['To'] = to_email
     msg['Subject'] = subject
-
-    # Koristimo HTML format umjesto plain text
     msg.attach(MIMEText(body, 'html'))
 
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(from_email, from_password)
-        text = msg.as_string()
-        server.sendmail(from_email, to_email, text)
+        server.sendmail(from_email, to_email, msg.as_string())
         server.quit()
-        print("Email uspešno poslat!")
+        print("✅ Email uspešno poslat!")
     except Exception as e:
-        print(f"Greška pri slanju emaila: {e}")
+        print(f"❌ Greška pri slanju emaila: {e}")
 
-# Funkcija za formatiranje oglasa
+# Formatira oglas u HTML
 def formatiraj_oglas(oglas_text):
     lines = oglas_text.split('\n')
     if len(lines) < 2:
-        return oglas_text  # Ako oglas nema dovoljno redova, vrati ga neformatiranog
-
-    # Prva linija je naziv predmeta
+        return oglas_text
     predmet = lines[0].strip()
-    # Druga linija je datum i vrijeme
     datum_vrijeme = lines[1].strip()
-    # Ostale linije su sadržaj oglasa
     sadrzaj = "<br>".join(lines[2:]).strip()
-
-    # Formatiranje u HTML
-    formatiran_oglas = (
+    return (
         f"<b>{predmet}</b><br>"
         f"Datum i vrijeme: {datum_vrijeme}<br>"
-        f"{sadrzaj}<br>"
-        "<hr>"
+        f"{sadrzaj}<br><hr>"
     )
-    return formatiran_oglas
 
-# Funkcija za normalizaciju oglasa
+# Blaža normalizacija (da ne izgubi razlike)
 def normalizuj_oglas(oglas_text):
-    # Uklanja višestruke razmake i specijalne karaktere
-    oglas_text = re.sub(r'\s+', ' ', oglas_text)  # Zamena višestrukih razmaka jednim razmakom
-    oglas_text = oglas_text.strip()  # Uklanja početne i krajnje razmake
+    oglas_text = oglas_text.replace('\r', '').strip()
+    oglas_text = re.sub(r'[ \t]+', ' ', oglas_text)  # uklanja duple razmake, ali ne nove redove
     return oglas_text
 
-# Funkcija za dobijanje oglasa sa stranice
+# Učitava oglase sa sajta
 def get_oglasi():
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
 
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     driver.get(URL)
 
     try:
-        # Čekamo da se učita stranica i svi <ul> tagovi
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "ul_id_1"))  # Prva godina
-        )
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "ul_id_2"))  # Druga godina
-        )
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "ul_id_3"))  # Treća godina
-        )
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "ul_id_4"))  # Četvrta godina
-        )
+        for i in range(1, 5):
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, f"ul_id_{i}")))
         print("✅ Oglasi su učitani!")
     except:
         print("⚠️ Oglasi nisu učitani na vreme!")
@@ -112,108 +91,67 @@ def get_oglasi():
     soup = BeautifulSoup(driver.page_source, "html.parser")
     driver.quit()
 
-    oglasi_po_godinama = {
-        "prva_godina": [],
-        "druga_godina": [],
-        "treca_godina": [],
-        "cetvrta_godina": []
-    }
-
-    # Čitanje oglasa za prvu godinu (ul_id_1)
-    ul_tag_prva_godina = soup.find("ul", id="ul_id_1")
-    if ul_tag_prva_godina and ul_tag_prva_godina.find_all("li"):
-        for li in ul_tag_prva_godina.find_all("li"):
-            oglas_text = li.get_text(separator="\n").strip()
-            for predmet in PREDMETI:
-                if predmet in oglas_text:
-                    oglasi_po_godinama["prva_godina"].append(oglas_text)
-                    break
-
-    # Čitanje oglasa za drugu godinu (ul_id_2)
-    ul_tag_druga_godina = soup.find("ul", id="ul_id_2")
-    if ul_tag_druga_godina and ul_tag_druga_godina.find_all("li"):
-        for li in ul_tag_druga_godina.find_all("li"):
-            oglas_text = li.get_text(separator="\n").strip()
-            for predmet in PREDMETI:
-                if predmet in oglas_text:
-                    oglasi_po_godinama["druga_godina"].append(oglas_text)
-                    break
-
-    # Čitanje oglasa za treću godinu (ul_id_3)
-    ul_tag_treca_godina = soup.find("ul", id="ul_id_3")
-    if ul_tag_treca_godina and ul_tag_treca_godina.find_all("li"):
-        for li in ul_tag_treca_godina.find_all("li"):
-            oglas_text = li.get_text(separator="\n").strip()
-            for predmet in PREDMETI:
-                if predmet in oglas_text:
-                    oglasi_po_godinama["treca_godina"].append(oglas_text)
-                    break
-
-    # Čitanje oglasa za četvrtu godinu (ul_id_4)
-    ul_tag_cetvrta_godina = soup.find("ul", id="ul_id_4")
-    if ul_tag_cetvrta_godina and ul_tag_cetvrta_godina.find_all("li"):
-        for li in ul_tag_cetvrta_godina.find_all("li"):
-            oglas_text = li.get_text(separator="\n").strip()
-            for predmet in PREDMETI:
-                if predmet in oglas_text:
-                    oglasi_po_godinama["cetvrta_godina"].append(oglas_text)
-                    break
-
+    oglasi_po_godinama = {f"{godina}_godina": [] for godina in ["prva", "druga", "treca", "cetvrta"]}
+    for godina_id, godina_ime in zip(range(1, 5), oglasi_po_godinama.keys()):
+        ul_tag = soup.find("ul", id=f"ul_id_{godina_id}")
+        if ul_tag and ul_tag.find_all("li"):
+            for li in ul_tag.find_all("li"):
+                oglas_text = li.get_text(separator="\n").strip()
+                for predmet in PREDMETI:
+                    if predmet in oglas_text:
+                        oglasi_po_godinama[godina_ime].append(oglas_text)
+                        break
     return oglasi_po_godinama
 
-# Funkcija za učitavanje poslatih oglasa iz fajla
-def ucitaj_poslate_oglasa():
-    if not os.path.exists("sent_ads.txt"):
-        return set()  # Ako fajl ne postoji, vraćamo prazan skup
-
-    with open("sent_ads.txt", "r", encoding="utf-8") as f:
-        return {normalizuj_oglas(oglas) for oglas in f.read().splitlines()}
-
-# Funkcija za čuvanje poslatih oglasa u fajl
-def sacuvaj_poslate_oglasa(poslednji_oglasi):
-    with open("sent_ads.txt", "w", encoding="utf-8") as f:
-        f.write("\n".join(poslednji_oglasi))
-
-# Glavna funkcija
-# Funkcija za učitavanje poslatih oglasa iz fajla
+# Učitava poslate oglase
 def ucitaj_poslate_oglasa():
     if not os.path.exists(SENT_ADS_PATH):
-        return set()  # Ako fajl ne postoji, vraćamo prazan skup
-
+        return set()
     with open(SENT_ADS_PATH, "r", encoding="utf-8") as f:
         return {normalizuj_oglas(oglas) for oglas in f.read().splitlines()}
 
-# Funkcija za čuvanje poslatih oglasa u fajl
+# Čuva poslate oglase
 def sacuvaj_poslate_oglasa(poslednji_oglasi):
     with open(SENT_ADS_PATH, "w", encoding="utf-8") as f:
         f.write("\n".join(poslednji_oglasi))
 
-# Glavna funkcija
+# ---------------- MAIN FUNKCIJA ----------------
 def main():
-    print("Koristi se fajl:", SENT_ADS_PATH)
-    # Provera da li sent_ads.txt postoji, ako ne, kreiraj ga
-    if not os.path.exists(SENT_ADS_PATH):
+    print("🔧 Pokrećem skriptu za oglase...")
+    print("📁 SENT_ADS_PATH =", SENT_ADS_PATH)
+
+    # Provera fajla
+    if os.path.exists(SENT_ADS_PATH):
+        print(f"📄 Fajl postoji. Veličina: {os.path.getsize(SENT_ADS_PATH)} B")
+    else:
+        print("⚠️ Fajl ne postoji! Kreiram novi...")
         with open(SENT_ADS_PATH, "w", encoding="utf-8") as f:
             f.write("")
 
-    poslednji_oglasi = ucitaj_poslate_oglasa()  # Učitamo poslednje oglase iz fajla
-    oglasi_po_godinama = get_oglasi()  # Dobijamo trenutne oglase grupisane po godinama
+    # Učitavanje starih oglasa
+    poslednji_oglasi = ucitaj_poslate_oglasa()
+    print("📊 Broj učitanih starih oglasa:", len(poslednji_oglasi))
 
-    # Normalizujemo trenutne oglase za poređenje
+    # Učitavanje trenutnih oglasa
+    oglasi_po_godinama = get_oglasi()
+    ukupno_trenutnih = sum(len(v) for v in oglasi_po_godinama.values())
+    print("🔎 Broj trenutno pronađenih oglasa na sajtu:", ukupno_trenutnih)
+
+    # Normalizacija
     trenutni_oglasi_normalizovani = set()
     for godina, oglasi in oglasi_po_godinama.items():
         for oglas in oglasi:
             trenutni_oglasi_normalizovani.add(normalizuj_oglas(oglas))
 
-    # Pronalaženje novih oglasa
+    # Pronalaženje novih
     novi_oglasi_normalizovani = trenutni_oglasi_normalizovani - poslednji_oglasi
-    if novi_oglasi_normalizovani:
-        print(f"Pronađeno {len(novi_oglasi_normalizovani)} novih oglasa!")
+    print("🆕 Novi oglasi detektovani:", len(novi_oglasi_normalizovani))
 
-        # Formatiranje i slanje samo novih oglasa
+    if novi_oglasi_normalizovani:
+        print("✅ Pronađeno novih oglasa! Šaljem email...")
         body = "<html><body>"
         for godina, oglasi in oglasi_po_godinama.items():
-            if oglasi:  # Ako postoje oglasi za ovu godinu
+            if oglasi:
                 body += f"<h2>Obaveštenja za {godina.replace('_', ' ').capitalize()}:</h2><br>"
                 for oglas in oglasi:
                     if normalizuj_oglas(oglas) in novi_oglasi_normalizovani:
@@ -222,13 +160,13 @@ def main():
 
         posalji_email("Novi oglasi za vaše predmete", body, EMAIL)
 
-        # Ažuriramo poslednje oglase
+        # Sačuvaj nove oglase
         poslednji_oglasi.update(novi_oglasi_normalizovani)
-        sacuvaj_poslate_oglasa(poslednji_oglasi)  # Sačuvamo ažurirane oglase u fajl
+        sacuvaj_poslate_oglasa(poslednji_oglasi)
+        print("💾 Novi oglasi sačuvani u sent_ads.txt.")
     else:
-        print("Nema novih oglasa.")
-# Pokretanje glavne funkcije
+        print("ℹ️ Nema novih oglasa.")
+
+# Pokretanje
 if __name__ == "__main__":
     main()
-
-
