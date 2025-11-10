@@ -72,52 +72,79 @@ def normalizuj_oglas(oglas_text):
 # Učitava oglase sa sajta
 def get_oglasi():
     print("🌐 Učitavam oglase sa stranice...")
-
-    # Pokreće browser u headless modu
-    from selenium import webdriver
-    from selenium.webdriver.chrome.options import Options
-
-    options = Options()
+    options = webdriver.ChromeOptions()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
-    driver = webdriver.Chrome(options=options)
-    driver.get("https://www.etf.unibl.org/")  # stavi pravu URL adresu ako se razlikuje
+    driver.get(URL)
 
     try:
-        # čekaj do 20 sekundi da se pojavi prvi <ul>
-        WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.TAG_NAME, "ul"))
+        WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "ui-content"))
         )
-        print("✅ Oglasi su učitani!")
-
-        oglasi_po_godinama = {}
-        ukupno_pronadjeno = 0
-
-        for i in range(1, 5):
-            try:
-                ul = driver.find_element(By.ID, f"ul_id_{i}")
-                li_elements = ul.find_elements(By.TAG_NAME, "li")
-                oglasi_po_godinama[i] = [li.text.strip() for li in li_elements if li.text.strip()]
-                ukupno_pronadjeno += len(oglasi_po_godinama[i])
-            except Exception:
-                continue
-
-        print(f"🔍 Ukupno pronađenih oglasa: {ukupno_pronadjeno}")
-
-        if ukupno_pronadjeno == 0:
-            print("⚠️ Nije pronađen nijedan oglas! Provjeri strukturu stranice ili ID-jeve elemenata.")
-
-        return oglasi_po_godinama
-
+        print("✅ Stranica učitana i sadrži 'ui-content'")
     except Exception as e:
-        print("⚠️ Oglasi nisu učitani na vreme:", e)
+        print(f"⚠️ Stranica nije učitana na vreme: {e}")
+        driver.quit()
         return {}
 
-    finally:
-        driver.quit()
+    oglasi_po_godinama = {
+        "prva_godina": [],
+        "druga_godina": [],
+        "treca_godina": [],
+        "cetvrta_godina": []
+    }
+
+    godine = [
+        ("Прва година", "prva_godina"),
+        ("Друга година", "druga_godina"),
+        ("Трећа година", "treca_godina"),
+        ("Четврта година", "cetvrta_godina"),
+    ]
+
+    for naziv, key in godine:
+        try:
+            # Klik na dugme godine
+            dugme = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, f"//span[contains(text(), '{naziv}')]"))
+            )
+            driver.execute_script("arguments[0].click();", dugme)
+
+            # Sačekaj da se pojavi sadržaj
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "ui-collapsible-content"))
+            )
+
+            soup = BeautifulSoup(driver.page_source, "html.parser")
+            content = soup.find("div", class_="ui-content")
+            collapsibles = content.find_all("div", class_="ui-collapsible-content")
+
+            for coll in collapsibles:
+                oglasi = coll.find_all("li", class_="ui-li")
+                for oglas in oglasi:
+                    naslov = oglas.find("span", class_="ui-li-heading")
+                    opis = oglas.find("p", class_="ui-li-desc")
+
+                    if not naslov or not opis:
+                        continue
+
+                    oglas_text = f"{naslov.get_text(strip=True)}\n{opis.get_text(strip=True)}"
+
+                    # Provjera da li oglas pripada relevantnim predmetima
+                    for predmet in PREDMETI:
+                        if predmet in oglas_text:
+                            oglasi_po_godinama[key].append(oglas_text)
+                            break
+
+            print(f"📚 {naziv}: pronađeno {len(oglasi_po_godinama[key])} oglasa.")
+
+        except Exception as e:
+            print(f"⚠️ Greška pri čitanju oglasa za {naziv}: {e}")
+
+    driver.quit()
+    return oglasi_po_godinama
 
 # Učitava poslate oglase
 def ucitaj_poslate_oglasa():
@@ -186,4 +213,5 @@ def main():
 # Pokretanje
 if __name__ == "__main__":
     main()
+
 
