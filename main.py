@@ -71,37 +71,53 @@ def normalizuj_oglas(oglas_text):
 
 # Učitava oglase sa sajta
 def get_oglasi():
-    options = webdriver.ChromeOptions()
+    print("🌐 Učitavam oglase sa stranice...")
+
+    # Pokreće browser u headless modu
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+
+    options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
 
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-    driver.get(URL)
+    driver = webdriver.Chrome(options=options)
+    driver.get("https://www.etf.unibl.org/")  # stavi pravu URL adresu ako se razlikuje
 
     try:
-        for i in range(1, 5):
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, f"ul_id_{i}")))
+        # čekaj do 20 sekundi da se pojavi prvi <ul>
+        WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.TAG_NAME, "ul"))
+        )
         print("✅ Oglasi su učitani!")
-    except:
-        print("⚠️ Oglasi nisu učitani na vreme!")
-        driver.quit()
+
+        oglasi_po_godinama = {}
+        ukupno_pronadjeno = 0
+
+        for i in range(1, 5):
+            try:
+                ul = driver.find_element(By.ID, f"ul_id_{i}")
+                li_elements = ul.find_elements(By.TAG_NAME, "li")
+                oglasi_po_godinama[i] = [li.text.strip() for li in li_elements if li.text.strip()]
+                ukupno_pronadjeno += len(oglasi_po_godinama[i])
+            except Exception:
+                continue
+
+        print(f"🔍 Ukupno pronađenih oglasa: {ukupno_pronadjeno}")
+
+        if ukupno_pronadjeno == 0:
+            print("⚠️ Nije pronađen nijedan oglas! Provjeri strukturu stranice ili ID-jeve elemenata.")
+
+        return oglasi_po_godinama
+
+    except Exception as e:
+        print("⚠️ Oglasi nisu učitani na vreme:", e)
         return {}
 
-    soup = BeautifulSoup(driver.page_source, "html.parser")
-    driver.quit()
-
-    oglasi_po_godinama = {f"{godina}_godina": [] for godina in ["prva", "druga", "treca", "cetvrta"]}
-    for godina_id, godina_ime in zip(range(1, 5), oglasi_po_godinama.keys()):
-        ul_tag = soup.find("ul", id=f"ul_id_{godina_id}")
-        if ul_tag and ul_tag.find_all("li"):
-            for li in ul_tag.find_all("li"):
-                oglas_text = li.get_text(separator="\n").strip()
-                for predmet in PREDMETI:
-                    if predmet in oglas_text:
-                        oglasi_po_godinama[godina_ime].append(oglas_text)
-                        break
-    return oglasi_po_godinama
+    finally:
+        driver.quit()
 
 # Učitava poslate oglase
 def ucitaj_poslate_oglasa():
@@ -170,3 +186,4 @@ def main():
 # Pokretanje
 if __name__ == "__main__":
     main()
+
