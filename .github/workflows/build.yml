@@ -2,7 +2,7 @@ name: Run Ad Scraper
 
 on:
   schedule:
-    - cron: "*/5 * * * *"  # Pokreće se svakih 5 minuta
+    - cron: "*/15 * * * *"  # Pokreće se svakih 5 minuta
   workflow_dispatch:  # Omogućava ručno pokretanje
 
 jobs:
