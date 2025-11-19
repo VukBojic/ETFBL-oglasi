@@ -199,7 +199,7 @@ def main():
                 for oglas in novi_oglasi:
                     body += formatiraj_oglas(oglas)
         
-        body += "<br><p><i>🔔 Ovo je automatska obaveštenja. Svi novi oglasi su poslati.</i></p>"
+        body += "<br><p><i>🔔 Ovo su automatska obaveštenja. Svi novi oglasi su poslati.</i></p>"
         body += "</body></html>"
 
         # Pošalji email
